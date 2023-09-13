@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) 2012-2023 the OpenProject GmbH
@@ -29,35 +27,45 @@
 #++
 
 module Meetings
-  class RowComponent < ::RowComponent
-    def project_name
-      helpers.link_to_project model.project, {}, {}, false
+  class SidebarComponent < ApplicationComponent
+    include ApplicationHelper
+    include OpTurbo::Streamable
+    include OpPrimer::ComponentHelpers
+
+    def initialize(meeting:)
+      super
+
+      @meeting = meeting
     end
 
-    def title
-      link_to model.title, meeting_path(model)
-    end
-
-    def type
-      if model.is_a?(StructuredMeeting)
-        I18n.t('meeting.types.structured')
-      else
-        I18n.t('meeting.types.classic')
+    def call
+      component_wrapper do
+        flex_layout(pl: 1) do |flex|
+          flex.with_row(border: :bottom, pb: 2) do
+            details_partial
+          end
+          flex.with_row(mt: 3, border: :bottom, pb: 2) do
+            state_partial
+          end
+          flex.with_row(mt: 3) do
+            participants_partial
+          end
+        end
       end
     end
 
-    def start_time
-      safe_join([helpers.format_date(model.start_time), helpers.format_time(model.start_time, false)], " ")
+    private
+
+    def details_partial
+      render(Meetings::Sidebar::DetailsComponent.new(meeting: @meeting))
     end
 
-    def duration
-      "#{number_with_delimiter model.duration} h"
+    def state_partial
+      render(Meetings::Sidebar::StateComponent.new(meeting: @meeting))
     end
 
-    def location
-      helpers.auto_link(model.location,
-                        link: :all,
-                        html: { target: '_blank' })
+    def participants_partial
+      render(Meetings::Sidebar::ParticipantsComponent.new(meeting: @meeting))
     end
   end
 end

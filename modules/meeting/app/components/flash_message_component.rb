@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) 2012-2023 the OpenProject GmbH
@@ -28,36 +26,37 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-module Meetings
-  class RowComponent < ::RowComponent
-    def project_name
-      helpers.link_to_project model.project, {}, {}, false
-    end
+class FlashMessageComponent < ApplicationComponent
+  include ApplicationHelper
+  include OpTurbo::Streamable
+  include OpPrimer::ComponentHelpers
 
-    def title
-      link_to model.title, meeting_path(model)
-    end
+  def initialize(message: nil, full: false, spacious: false, dismissible: false, icon: nil, scheme: :default)
+    super
 
-    def type
-      if model.is_a?(StructuredMeeting)
-        I18n.t('meeting.types.structured')
-      else
-        I18n.t('meeting.types.classic')
+    @message = message
+    @full = full
+    @spacious = spacious
+    @dismissible = dismissible # TODO: not working yet -> JS dependency not provided?
+    @icon = icon
+    @scheme = scheme
+  end
+
+  def call
+    component_wrapper do
+      # even without provided message, the wrapper should be  rendered as this allows
+      # for triggering a flash message via turbo stream
+      if @message.present?
+        flash_partial
       end
     end
+  end
 
-    def start_time
-      safe_join([helpers.format_date(model.start_time), helpers.format_time(model.start_time, false)], " ")
-    end
+  private
 
-    def duration
-      "#{number_with_delimiter model.duration} h"
-    end
-
-    def location
-      helpers.auto_link(model.location,
-                        link: :all,
-                        html: { target: '_blank' })
-    end
+  def flash_partial
+    render(Primer::Beta::Flash.new(
+             full: @full, spacious: @spacious, dismissible: @dismissible, icon: @icon, scheme: @scheme
+           )) { @message }
   end
 end

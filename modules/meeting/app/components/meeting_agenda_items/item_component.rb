@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) 2012-2023 the OpenProject GmbH
@@ -28,36 +26,40 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-module Meetings
-  class RowComponent < ::RowComponent
-    def project_name
-      helpers.link_to_project model.project, {}, {}, false
+module MeetingAgendaItems
+  class ItemComponent < ApplicationComponent
+    include ApplicationHelper
+    include OpTurbo::Streamable
+    include OpPrimer::ComponentHelpers
+
+    def initialize(meeting_agenda_item:, state: :show)
+      super
+
+      @meeting_agenda_item = meeting_agenda_item
+      @state = state
     end
 
-    def title
-      link_to model.title, meeting_path(model)
+    def wrapper_uniq_by
+      @meeting_agenda_item.id
     end
 
-    def type
-      if model.is_a?(StructuredMeeting)
-        I18n.t('meeting.types.structured')
-      else
-        I18n.t('meeting.types.classic')
+    def call
+      component_wrapper do
+        case @state
+        when :show
+          render(MeetingAgendaItems::ItemComponent::ShowComponent.new(**child_component_params))
+        when :edit
+          render(MeetingAgendaItems::ItemComponent::EditComponent.new(**child_component_params))
+        end
       end
     end
 
-    def start_time
-      safe_join([helpers.format_date(model.start_time), helpers.format_time(model.start_time, false)], " ")
-    end
+    private
 
-    def duration
-      "#{number_with_delimiter model.duration} h"
-    end
-
-    def location
-      helpers.auto_link(model.location,
-                        link: :all,
-                        html: { target: '_blank' })
+    def child_component_params
+      {
+        meeting_agenda_item: @meeting_agenda_item
+      }
     end
   end
 end

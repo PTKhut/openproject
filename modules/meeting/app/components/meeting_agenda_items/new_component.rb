@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) 2012-2023 the OpenProject GmbH
@@ -28,36 +26,44 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-module Meetings
-  class RowComponent < ::RowComponent
-    def project_name
-      helpers.link_to_project model.project, {}, {}, false
+module MeetingAgendaItems
+  class NewComponent < ApplicationComponent
+    include ApplicationHelper
+    include OpTurbo::Streamable
+    include OpPrimer::ComponentHelpers
+
+    def initialize(meeting:, meeting_agenda_item: nil, hidden: true, type: :simple)
+      super
+
+      @meeting = meeting
+      @meeting_agenda_item = meeting_agenda_item || MeetingAgendaItem.new(meeting:, author: User.current)
+      @hidden = hidden
+      @type = type
     end
 
-    def title
-      link_to model.title, meeting_path(model)
-    end
-
-    def type
-      if model.is_a?(StructuredMeeting)
-        I18n.t('meeting.types.structured')
-      else
-        I18n.t('meeting.types.classic')
+    def call
+      component_wrapper do
+        unless @hidden
+          form_partial
+        end
       end
     end
 
-    def start_time
-      safe_join([helpers.format_date(model.start_time), helpers.format_time(model.start_time, false)], " ")
-    end
+    private
 
-    def duration
-      "#{number_with_delimiter model.duration} h"
-    end
-
-    def location
-      helpers.auto_link(model.location,
-                        link: :all,
-                        html: { target: '_blank' })
+    def form_partial
+      render(Primer::Box.new(border: :top)) do
+        render(Primer::Box.new(p: 3)) do
+          render(MeetingAgendaItems::FormComponent.new(
+                   meeting: @meeting,
+                   meeting_agenda_item: @meeting_agenda_item,
+                   method: :post,
+                   submit_path: meeting_agenda_items_path(@meeting),
+                   cancel_path: cancel_new_meeting_agenda_items_path(@meeting),
+                   type: @type
+                 ))
+        end
+      end
     end
   end
 end

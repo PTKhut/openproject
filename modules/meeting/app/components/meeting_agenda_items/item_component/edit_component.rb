@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) 2012-2023 the OpenProject GmbH
@@ -28,36 +26,33 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-module Meetings
-  class RowComponent < ::RowComponent
-    def project_name
-      helpers.link_to_project model.project, {}, {}, false
+module MeetingAgendaItems
+  class ItemComponent::EditComponent < ApplicationComponent
+    include ApplicationHelper
+    include OpPrimer::ComponentHelpers
+
+    def initialize(meeting_agenda_item:)
+      super
+
+      @meeting_agenda_item = meeting_agenda_item
+      @type = if @meeting_agenda_item.work_package.present?
+                :work_package
+              else
+                :simple
+              end
     end
 
-    def title
-      link_to model.title, meeting_path(model)
-    end
-
-    def type
-      if model.is_a?(StructuredMeeting)
-        I18n.t('meeting.types.structured')
-      else
-        I18n.t('meeting.types.classic')
+    def call
+      render(Primer::Box.new(pl: 3)) do
+        render(MeetingAgendaItems::FormComponent.new(
+                 meeting: @meeting_agenda_item.meeting,
+                 meeting_agenda_item: @meeting_agenda_item,
+                 method: :put,
+                 submit_path: meeting_agenda_item_path(@meeting_agenda_item.meeting, @meeting_agenda_item),
+                 cancel_path: cancel_edit_meeting_agenda_item_path(@meeting_agenda_item.meeting, @meeting_agenda_item),
+                 type: @type
+               ))
       end
-    end
-
-    def start_time
-      safe_join([helpers.format_date(model.start_time), helpers.format_time(model.start_time, false)], " ")
-    end
-
-    def duration
-      "#{number_with_delimiter model.duration} h"
-    end
-
-    def location
-      helpers.auto_link(model.location,
-                        link: :all,
-                        html: { target: '_blank' })
     end
   end
 end

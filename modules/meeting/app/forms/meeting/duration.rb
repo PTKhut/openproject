@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) 2012-2023 the OpenProject GmbH
@@ -28,36 +26,20 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-module Meetings
-  class RowComponent < ::RowComponent
-    def project_name
-      helpers.link_to_project model.project, {}, {}, false
-    end
-
-    def title
-      link_to model.title, meeting_path(model)
-    end
-
-    def type
-      if model.is_a?(StructuredMeeting)
-        I18n.t('meeting.types.structured')
-      else
-        I18n.t('meeting.types.classic')
-      end
-    end
-
-    def start_time
-      safe_join([helpers.format_date(model.start_time), helpers.format_time(model.start_time, false)], " ")
-    end
-
-    def duration
-      "#{number_with_delimiter model.duration} h"
-    end
-
-    def location
-      helpers.auto_link(model.location,
-                        link: :all,
-                        html: { target: '_blank' })
-    end
+class Meeting::Duration < ApplicationForm
+  form do |meeting_form|
+    meeting_form.text_field(
+      name: :duration,
+      type: :number,
+      min: 0,
+      max: 24,
+      step: 0.05,
+      placeholder: Meeting.human_attribute_name(:duration),
+      label: Meeting.human_attribute_name(:duration),
+      visually_hide_label: false,
+      required: true,
+      leading_visual: { icon: :stopwatch },
+      caption: I18n.t("text_in_hours")
+    )
   end
 end
